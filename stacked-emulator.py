@@ -166,7 +166,6 @@ class Assembler(object):
         else:
             enc = opcode << 12 | imm
 
-        print enc
         return enc
 
 
@@ -198,3 +197,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
