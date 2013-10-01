@@ -1,5 +1,11 @@
 from opcodes import *
 
+class StackFullError(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
 class StackedEmulator(object):
     """
     Stacked is a basic stack machine emulator. The memory architecture and structure
@@ -14,22 +20,42 @@ class StackedEmulator(object):
     |           |       +----------------+
     +-----------+
 
-    Instructions are 16-bits wide, all data paths are 16 bits. (FIXME bad move?)
+    Instructions are 16-bits wide, all data paths are 16 bits.
     """
-    def __init__(self, pmem, dmem): # Initialize pmem and dmem
+    def __init__(self, pmem, dmem, N=32): # Initialize pmem and dmem
         self.pmem = pmem # program memory 
         self.dmem = dmem # data memory [FIXME]
         self.pc = 0      # Program Counter
-        self.dstack = [] # data stack
+        self.dstack = [] # data stack of size N
         self.rstack = [] # return stack
         self.ir = 0      # current instruction register
-
+        self.N = N
 
     def fetch(self):
         """
         Load instruction from program memory into the instruction register.
         """
         self.ir = self.pmem[self.pc]
+
+    def __popr(self):
+        return self.rstack.pop()
+
+    def __popd(self):
+        return self.dstack.pop()
+
+    def __pushr(self, val):
+        if len(self.rstack) < self.N:
+            self.rstack.append(val)
+            return 0
+        else:
+            raise
+
+    def __pushd(self, val):
+        if len(self.dstack) < self.N:
+            self.dstack.append(val)
+            return 0
+        else:
+            raise
 
     def decode(self, cmd=None):
         """
@@ -45,10 +71,16 @@ class StackedEmulator(object):
             self.pc -= 1
         elif opcode == Opcodes.PUSH:
             print "PUSHI {0}".format(self.dmem[imm])
-            self.dstack.append(self.dmem[imm])
+            try:
+                self.__pushd(self.dmem[imm])
+            except:
+                print "Oh No... Stack Full"
         elif opcode == Opcodes.PUSHI:
             print "PUSH {0}".format(imm)
-            self.dstack.append(imm)
+            try:
+                self.__pushd(imm)
+            except:
+                print "Oh No... Stack Full"
         elif opcode == Opcodes.STORE:
             self.dmem[imm] = self.dstack.pop()
             print "STORE {0}".format(self.dmem[imm])
